@@ -12,18 +12,16 @@ import negotiator.boaframework.OutcomeSpace;
 
 import java.util.List;
 
-public class MyAgent extends AbstractNegotiationParty {
+public class MyAgent2 extends AbstractNegotiationParty {
 
     private final String description = "Group 15's Agent, A simple time dependent agent";
     private double minUtil, maxUtil;
     private Bid receivedOffer = null;
-    private NegotiationInfo info;
 
     @Override
     public void init(NegotiationInfo info) {
         super.init(info);
-        this.info = info;
-        OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(info.getUtilitySpace());
+        OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(this.utilitySpace);
         BidDetails minUtilBid = os.getMinBidPossible();
         minUtil = minUtilBid.getMyUndiscountedUtil();
         BidDetails maxUtilBid = os.getMaxBidPossible();
@@ -42,23 +40,25 @@ public class MyAgent extends AbstractNegotiationParty {
         double acceptUtil = minUtil + (1-TimeModifier())*(maxUtil-minUtil);
         if (receivedOffer == null) {
             try {
-                return new Offer(info.getAgentID(), this.utilitySpace.getMaxUtilityBid());
+                return new Offer(this.getPartyId(), this.utilitySpace.getMaxUtilityBid());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        if (info.getUtilitySpace().getUtility(receivedOffer) >= acceptUtil){
-            return  new Accept(info.getAgentID(), receivedOffer);
+        if (this.utilitySpace.getUtility(receivedOffer) >= acceptUtil){
+            return  new Accept(this.getPartyId(), receivedOffer);
         }else{
-            OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(info.getUtilitySpace());
-            return new Offer(info.getAgentID(), os.getBidNearUtility(acceptUtil).getBid());
+
+            OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(this.utilitySpace);
+            return new Offer(this.getPartyId(), os.getBidNearUtility(acceptUtil).getBid());
         }
     }
 
     private double TimeModifier(){
         double alpha = 0.7;
         double beta = 1.4;
-        double time = info.getTimeline().getTime();
+
+        double time = this.timeline.getTime();
         double TM = alpha + ((1+alpha)*(Math.pow(Math.min(time, 1.0)/1.0,1.0/beta)));
         return TM;
 
