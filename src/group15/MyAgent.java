@@ -12,7 +12,7 @@ import negotiator.boaframework.OutcomeSpace;
 
 import java.util.List;
 
-public class MyAgent2 extends AbstractNegotiationParty {
+public class MyAgent extends AbstractNegotiationParty {
 
     private final String description = "Group 15's Agent, A simple time dependent agent";
     private double minUtil, maxUtil;
@@ -21,11 +21,14 @@ public class MyAgent2 extends AbstractNegotiationParty {
     @Override
     public void init(NegotiationInfo info) {
         super.init(info);
-        OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(this.utilitySpace);
-        BidDetails minUtilBid = os.getMinBidPossible();
-        minUtil = minUtilBid.getMyUndiscountedUtil();
-        BidDetails maxUtilBid = os.getMaxBidPossible();
-        maxUtil = maxUtilBid.getMyUndiscountedUtil();
+        try {
+            Bid minBid = utilitySpace.getMinUtilityBid();
+            minUtil = utilitySpace.getUtility(minBid);
+            Bid maxBid = utilitySpace.getMaxUtilityBid();
+            maxUtil = utilitySpace.getUtility(maxBid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -40,17 +43,17 @@ public class MyAgent2 extends AbstractNegotiationParty {
         double acceptUtil = minUtil + (1-TimeModifier())*(maxUtil-minUtil);
         if (receivedOffer == null) {
             try {
-                return new Offer(this.getPartyId(), this.utilitySpace.getMaxUtilityBid());
+                return new Offer(getPartyId(), utilitySpace.getMaxUtilityBid());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         if (this.utilitySpace.getUtility(receivedOffer) >= acceptUtil){
-            return  new Accept(this.getPartyId(), receivedOffer);
+            return  new Accept(getPartyId(), receivedOffer);
         }else{
 
-            OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(this.utilitySpace);
-            return new Offer(this.getPartyId(), os.getBidNearUtility(acceptUtil).getBid());
+            OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(utilitySpace);
+            return new Offer(getPartyId(), os.getBidNearUtility(acceptUtil).getBid());
         }
     }
 
