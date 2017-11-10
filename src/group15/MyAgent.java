@@ -9,26 +9,20 @@ import negotiator.bidding.BidDetails;
 import negotiator.parties.AbstractNegotiationParty;
 import negotiator.parties.NegotiationInfo;
 import negotiator.boaframework.OutcomeSpace;
-
 import java.util.List;
 
 public class MyAgent extends AbstractNegotiationParty {
 
     private final String description = "Group 15's Agent, A simple time dependent agent";
     private double minUtil, maxUtil;
-    private Bid receivedOffer = null;
+    private Bid bestReceivedBid = null;
+    private OutcomeSpace os;
 
     @Override
     public void init(NegotiationInfo info) {
         super.init(info);
-        try {
-            Bid minBid = utilitySpace.getMinUtilityBid();
-            minUtil = utilitySpace.getUtility(minBid);
-            Bid maxBid = utilitySpace.getMaxUtilityBid();
-            maxUtil = utilitySpace.getUtility(maxBid);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        os = new negotiator.boaframework.OutcomeSpace(utilitySpace);
+        os.generateAllBids(utilitySpace);
     }
 
     /**
@@ -40,31 +34,39 @@ public class MyAgent extends AbstractNegotiationParty {
      */
     @Override
     public Action chooseAction(List<Class<? extends Action>> list) {
-        double acceptUtil = minUtil + (1-TimeModifier())*(maxUtil-minUtil);
-        if (receivedOffer == null) {
+        try {
+            Bid minBid = utilitySpace.getMinUtilityBid();
+            minUtil = utilitySpace.getUtility(minBid);
+            Bid maxBid = utilitySpace.getMaxUtilityBid();
+            maxUtil = utilitySpace.getUtility(maxBid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        double TM = TimeModifier();
+        double acceptUtil = minUtil + (1-TM)*(maxUtil-minUtil);
+        if (bestReceivedBid == null) {
             try {
                 return new Offer(getPartyId(), utilitySpace.getMaxUtilityBid());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        if (this.utilitySpace.getUtility(receivedOffer) >= acceptUtil){
-            return  new Accept(getPartyId(), receivedOffer);
+        if (this.utilitySpace.getUtility(bestReceivedBid) >= acceptUtil){
+            return  new Accept(getPartyId(), bestReceivedBid);
         }else{
-
-            OutcomeSpace os = new negotiator.boaframework.OutcomeSpace(utilitySpace);
             return new Offer(getPartyId(), os.getBidNearUtility(acceptUtil).getBid());
         }
     }
 
     private double TimeModifier(){
-        double alpha = 0.7;
+        double alpha = 0.1;
         double beta = 1.4;
 
         double time = this.timeline.getTime();
-        double TM = alpha + ((1+alpha)*(Math.pow(Math.min(time, 1.0)/1.0,1.0/beta)));
-        return TM;
 
+        double TM = alpha + ((1-alpha)*(Math.pow(time,1.0/beta)));
+
+        return TM;
     }
 
     /**
@@ -86,7 +88,8 @@ public class MyAgent extends AbstractNegotiationParty {
         super.receiveMessage(sender, act);
         if (act instanceof Offer) {
             Offer offer = (Offer) act;
-            receivedOffer = offer.getBid();
+            Bid bid = offer.getBid();
+            bestReceivedBid = offer.getBid();
         }
     }
 }
